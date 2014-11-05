@@ -1,0 +1,37 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.4(huang.shuai 2012-04-25): update mysql to 5.5.23
+#===3.0.2(huang.shuai 2011-10-01): update mysql to 5.5.16
+#===3.0.0(huang.shuai 2011-10-01): update mysql to 5.5.15
+#===2.2.0(huang.shuai 2009-12-31): update mysql to 5.1.42
+#===2.0.5(huang.shuai 2009-10-27): update mysql from 5.0.51a to 5.1.40
+#===2.0.4(xie.hang 2007-12-14): update mysql from 5.0.41 to 5.0.51a and add mysql/bin to /usr/local/bin
+#===2.0.3(xie.hang 2007-05-30): update mysql from 5.0.27 to 5.0.41
+#===2.0.2(xie.hang 2006-11-01): update mysql from 5.0.18 to 5.0.27
+#===2.0.1(huang.shuai 2006-07-05): document format
+#===2.0.0(huang.shuai 2006-07-04): installation path
+
+Download the latest mysql source from http://dev.mysql.com/
+
+wget http://dev.mysql.com/get/Downloads/MySQL-5.5/MySQL-devel-5.5.23-1.linux2.6.x86_64.rpm/from/http://ftp.iij.ad.jp/pub/db/mysql/
+# for *.h, *.a
+
+yum install mysql-libs
+
+wget http://dev.mysql.com/get/Downloads/MySQL-5.5/mysql-5.5.23-linux2.6-x86_64.tar.gz/from/http://ftp.iij.ad.jp/pub/db/mysql/
+tar zxf mysql-5.5.23-linux2.6-x86_64.tar.gz
+
+cp -a mysql-5.5.23-linux2.6-x86_64 /usr/local/mysql-5.5.23
+ln -s /usr/local/mysql-5.5.23 /usr/local/mysql
+ln -s /usr/local/mysql/bin/* /usr/local/bin/
+
+groupadd -g 1982 mysql
+useradd -u 200601 -g mysql mysql
+chown -R mysql:mysql /usr/local/mysql-5.5.23

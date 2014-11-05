@@ -1,0 +1,34 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.0(huang.shuai 2011-10-01): use mod_perl 2.0.5
+#===2.2.0(huang.shuai 2009-12-31): Update to 2.2.0
+#===2.0.0(huang.shuai 2006-07-05): document format
+
+### Need stdsys-httpd While Build
+
+### Install mod_perl
+
+# Download mod_perl
+wget http://perl.apache.org/dist/mod_perl-2.0-current.tar.gz
+
+# Unpack
+tar zxf mod_perl-2.0-current.tar.gz
+
+# Compile and install
+cd mod_perl-2.0.5
+ln -s /usr/lib64/libgdbm.so.2.0.0 /usr/lib64/libgdbm.so
+
+perl Makefile.PL MP_APXS=/usr/local/httpd/bin/apxs
+make
+make install
+
+# Relayout mod_perl.so
+mv /usr/local/httpd/modules/mod_perl.so /usr/local/lib64/perl5/ModPerl/
+ln -s /usr/local/lib64/perl5/ModPerl/mod_perl.so /usr/local/httpd/modules/

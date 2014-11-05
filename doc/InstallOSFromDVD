@@ -1,0 +1,104 @@
+#=====================================================================
+#=== Title : Standard System Guide step 1: install system from CD  ===
+#=====================================================================
+#=== Author: qian.yu, yang.fang, huang.shuai, xie.hang             ===
+#===         From TS Department, Adways                            ===
+#=====================================================================
+
+Require CD: CentOS-6.0-x86_64-bin-DVD1
+
+1.  "Install or upgrade an existing system"
+    There are 5 options, use the 1st., the best choice.
+    You can also choose the 2nd.: "Install system with basic video driver if your video driver is strange". 
+
+2.  "Disc Found": "Skip"
+    After Loading everything, It shows a text UI.
+        "To begin testing the media before installation press OK.
+        Choose Skip to skip the media test and start the installation"
+    If you CD is new one, or it had failed during the last installation, you can choose "OK".
+    Or, "Skip" is the best choice.
+
+3.  Welcome: Next
+    "Running anaconda 13.21.82"... It leads you to a graphic UI. Now you can use your mouse.
+    Or it says "RAM not enough", and get into a text UI, DO NOT continue.
+    Because text mode installation of CentOS 6 CANNOT change partition.
+    The best way to solve this is increase RAM.
+
+4.  "What language would you like to use during the installation process?": "English(English)"
+    It is the default option, you needn't change it. Because this document is also in English.
+
+5.  "Select the appropriate keyboard for the system.": "U.S. English"
+    It is also the default option. Or, you used a strange keyboard.
+
+6.  "What type of devices will your installation involve?": "Basic Storage Devices"
+    Again, the default. If you have strange storage devices, you can change it.
+
+7.  Examing Devices...
+    If you had installed an OS on the machine, it will says:
+        "At least one existing installation has been detected on your system. What would you like to do?"
+    Use the "Fresh Installation".
+
+8.  "Please name this computer. The hostname identifies the computer on a network": DONOT click "Next"
+    Here, set the Hostname to SX (e.g. if ur ip is 192.168.1.60 then the recommend hostname is S60)
+
+9.  Click the "Configure Network"
+    In the "Wired" tab, choose "System eth0", Click "Edit..."
+        Check the "Connect automatically"
+        Click "IPv4 Settings"
+        Change "Method" to "Manual"
+        Click "Add"
+        "Address": "192.168.1.X"
+        "Netmask": "255.255.248.0"
+        "Gateway": "192.168.1.75"
+        Set "DNS servers" to "192.168.1.6" if the machine is use in company.
+        If the machine is for hosting, ask ITS
+        Click "Apply..."
+    Click "Close"
+
+10. "Please select the nearest city in your time zone:": "Shanghai, Asia"
+    Keep "System clock uses UTC" checked
+
+11. "The root account is used for administering the system. Enter a password for the root user."
+    Ft****
+
+12. "Which type of installation would you like?"
+    Choose "Create Custom Layout"
+
+13. 
+#=============================================================================================================
+       | Mount Point | File System Type | Size(MB) | Additional Size Options | Force to be a primary partition
+#=============================================================================================================
+boot     /boot         ext4               100        Fixed size                checked
+system   /             ext4               5000       Fixed size
+home     /home         ext4               5000       Fixed size
+usr      /usr          ext4               15000      Fixed size
+tmp      /tmp          ext4               5000       Fixed size
+swap                   swap               SWAP:2000  Fixed size
+var      /var          ext4                          Fill to maximum allowable size
+#=============================================================================================================
+
+14. "Writing storage configuration to disk": "Write changes to disk"
+
+15. Boot
+    You need not change anything, just click "Next"
+
+16. "The default installation of CentOS is a minimum install. You can optionally select a different set of software now."
+    "Basic Server"
+    "Customize later"
+
+17. "Installation Starting"
+
+18. "Congratulations, your CentOS installation is complete."
+    "Reboot"
+
+#=====================================================================
+#=== History
+#=== 2.0.0(yang.fang 2006-01-10): create
+#=== 2.0.1(huang.shuai 2006-07-04): document format, DNS server, disk partitioning
+#=== 2.0.2(xie.hang 2006-09-13): modify the disk partitioning
+#=== 2.0.3(xie.hang 2007-06-04): update to CentOS4.4
+#=== 2.0.4(xie.hang 2007-07-03): update to CentOS5
+#=== 2.0.5(xie.hang 2007-08-01): modify Network base settings
+#=== 2.2.0(huang.shuai 2009-12-31): Update to 2.2.0
+#=== 3.0.0(huang.shuai 2011-07-14): Build for CentOS 6
+#=====================================================================

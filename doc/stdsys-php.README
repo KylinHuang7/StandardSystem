@@ -1,0 +1,95 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.5(huang.shuai 2012-04-28): update to 5.3.11
+#===3.0.4(huang.shuai 2012-04-24): update to 5.3.10
+#===3.0.0(huang.shuai 2011-10-01): update apache to 2.2.20
+#===2.2.0(huang.shuai 2009-12-31): Update to 2.2.0
+#===2.0.1(xie.hang 2006-09-20): modify
+#===2.0.0(huang.shuai 2006-07-05): document format
+
+### Install php
+
+yum install autoconf213 
+
+# Install imap,for support imap mail system
+>>>Download the latest imap from ftp://ftp.cac.washington.edu/imap
+wget ftp://ftp.cac.washington.edu/imap/imap.tar.gz
+tar zxf imap.tar.gz
+cd imap-2007f
+make lr5 EXTRACFLAGS=-fPIC
+mkdir lib include
+cd c-client/
+cp *.h ../include/
+cp *.c ../lib/
+cp c-client.a ../lib/libc-client.a
+
+# Install php
+>>> Download the latest php source from http://www.php.net
+wget http://cn.php.net/get/php-5.3.11.tar.gz/from/cn2.php.net/mirror
+tar zxf php-5.3.11.tar.gz
+
+# Add memcache extension
+wget http://pecl.php.net/get/memcache-2.2.6.tgz
+tar zxf memcache-2.2.6.tgz
+mv memcache-2.2.6 php-5.3.11/ext/memcache
+
+# Add APC extension
+wget http://pecl.php.net/get/APC-3.1.9.tgz
+tar zxf APC-3.1.9.tgz
+mv APC-3.1.9 php-5.3.11/ext/apc
+
+>>> Prepare prefix
+mkdir /usr/local/php-5.3.11
+ln -s /usr/local/php-5.3.11 /usr/local/php
+
+cd php-5.3.11
+rm -rf configure autom4te.cache
+PHP_AUTOCONF=/usr/bin/autoconf-2.13 ./buildconf --force
+./configure --prefix=/usr/local/php --with-config-file-path=/usr/local/php/etc --with-libdir=lib64 --with-jpeg-dir --with-png-dir --with-gd --with-freetype-dir --enable-mbstring --with-zlib --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-gettext --with-imap=/usr/local/src/imap-2007f --with-imap-ssl --with-curl --with-pear --with-mcrypt --with-openssl --with-ldap --with-regex --enable-soap --with-snmp=/usr --enable-gd-native-ttf --enable-mysqlnd --enable-apc --enable-memcache --enable-sockets --enable-fpm
+make
+make install
+cp php.ini-development /usr/local/php/etc/php.ini
+
+vi /usr/local/php/etc/php.ini
+session.save_path = "/tmp"
+date.timezone = "Asia/Shanghai"
+
+ln -s /usr/local/php/bin/* /usr/local/bin/
+rm -rf /usr/local/php/lib/php/.channels
+pear update-channels
+touch /var/log/php-fpm.log
+touch /var/log/php-fpm.access.log
+cp /usr/local/php/etc/php-fpm.conf.default /usr/local/php/etc/php-fpm.conf
+
+vi /usr/local/php/etc/php-fpm.conf
+pid = /var/run/php-fpm.pid
+error_log = /var/log/php-fpm.log
+pm.max_children = 35
+pm.start_servers = 20
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+access.log = /var/log/php-fpm.access.log
+
+cp sapi/fpm/init.d.php-fpm /etc/rc.d/init.d/php-fpm
+
+### Zend Optimizer
+
+>>> Download ZendGuardLoader 5.5 from http://www.zend.com/en/products/guard (free register and activation required)
+tar zxf ZendGuardLoader-php-5.3-linux-glibc23-x86_64.tar.gz
+cd ZendGuardLoader-php-5.3-linux-glibc23-x86_64
+cp php-5.3.x/ZendGuardLoader.so /usr/local/php
+
+>>> Add to /usr/local/php/etc/php.ini
+[Zend]
+zend_extension=/usr/local/php/ZendGuardLoader.so
+zend_loader.enable = 1
+zend_loader.disable_licensing = 0
+zend_loader.obfuscation_level_support = 3
+zend_loader.license_path =

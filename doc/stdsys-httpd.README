@@ -1,0 +1,224 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.0(huang.shuai 2011-10-01): update apache to 2.2.20
+#===2.2.0(huang.shuai 2009-12-31): Update to 2.2.0
+#===2.0.2(xie.hang 2007-12-24): change /usr/local/app/httpd to /usr/local/app/apache
+#===2.0.1(xie.hang 2007-12-13): add mod_proxy, create_apache and ln '/usr/local/httpd/bin' to '/usr/local/bin'
+#===2.0.0(xie.hang 2007-10-16): create
+
+### Install apache
+
+# Download apache
+wget http://apache.mirror.phpchina.com/httpd/httpd-2.2.20.tar.gz
+
+# Unpack
+tar zxf httpd-2.2.20.tar.gz
+
+# Prepare httpd prefix
+mkdir /usr/local/httpd-2.2.20
+ln -s /usr/local/httpd-2.2.20 /usr/local/httpd
+
+cd httpd-2.2.20
+./configure --prefix=/usr/local/httpd --enable-so  --with-mpm=prefork --enable-mods-shared=all --enable-proxy
+make
+make install
+
+# Install mod_fastcgi
+wget http://www.fastcgi.com/dist/mod_fastcgi-current.tar.gz
+tar zxf mod_fastcgi-current.tar.gz
+cd mod_fastcgi-2.4.6/
+cp Makefile.AP2 Makefile
+make top_dir=/usr/local/httpd
+make install top_dir=/usr/local/httpd
+
+
+### Configure
+
+groupadd -g 1992 apache
+useradd -u 200801 -g apache apache
+
+# move 'conf' to 'conf_move'
+mv /usr/local/httpd/conf /usr/local/httpd/conf_bak
+
+# Copy 'conf' from default_site_conf to /usr/local/etc/apache/
+
+cd config
+tar zxf StdSys2_CONF_httpd.tar.gz
+mkdir /usr/local/etc/apache
+cp -R conf /usr/local/etc/apache/
+ln -s /usr/local/etc/apache/conf /usr/local/httpd/
+
+# Construct default_site structure
+mkdir -p /var/www/default_site/htdocs
+
+# Create app script
+vi /usr/local/app/apache
+#!/bin/sh
+
+# description: the httpd MTA
+
+SERVICE="httpd"
+
+case "$1" in
+  start)
+    service httpd start
+    ;;
+  stop)
+    service httpd stop
+    ;;
+  stat)
+    service httpd status
+    ;;
+  restart)
+    service httpd restart
+    ;;
+  help)
+    cat <<HELP
+   stop -- stops $SERVICE service
+  start -- starts $SERVICE service
+   stat -- displays status of $SERVICE service
+restart -- stops and restarts $SERVICE
+HELP
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|stat|help}"
+    exit 1
+    ;;
+esac
+
+exit 0
+>>save it
+chmod 0744 /usr/local/app/apache
+
+cp config/httpd /etc/rc.d/init.d/
+
+vi /usr/local/app/create_apache
+#!/bin/sh
+
+#=====================================
+#===Author  : xie.hang             ===
+#===Email   : xie.hang@adways.net  ===
+#===MSN     : xie.hang@adways.net  ===
+#=====================================
+
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===2.2.0(huang.shuai 2009-12-31): change to INIT
+#===2.0.0(xie.hang 2007-12-13): create
+
+if [ "$#" != 1 ]
+then
+    echo "Usage: ./create_apache your_apache_name"
+    exit 1
+fi
+apache_name=httpd_$1
+if [ -e /usr/local/etc/$apache_name/conf/httpd.conf ]
+then
+    echo "The apache name: $1 is already in use ,please choose another one!"
+    exit 1
+fi
+mkdir -p /usr/local/etc/$apache_name
+cp -r /usr/local/httpd/conf_bak /usr/local/etc/$apache_name/conf
+sed -e "s/PidFile.*/PidFile \"\/var\/run\/$apache_name.pid\"/" -i /usr/local/etc/$apache_name/conf/extra/httpd-mpm.conf
+echo "#change the PidFile for apache">>/usr/local/etc/$apache_name/conf/httpd.conf
+echo "PidFile /var/run/$apache_name.pid">>/usr/local/etc/$apache_name/conf/httpd.conf
+ln -s /usr/local/etc/$apache_name/conf /usr/local/httpd/${apache_name}_conf
+sed -e "s/#ServerName www.*/ServerName 127.0.0.1/" -i /usr/local/etc/$apache_name/conf/httpd.conf
+mkdir -p /var/log/$apache_name
+sed -e "s/ErrorLog \/var\/log\/httpd\/error_log/ErrorLog \/var\/log\/$apache_name\/error_log/" -i /usr/local/etc/$apache_name/conf/httpd.conf
+sed -e "s/CustomLog \/var\/log\/httpd\/access_log common/CustomLog \/var\/log\/$apache_name\/access_log common/" -i /usr/local/etc/$apache_name/conf/httpd.conf
+
+echo "Please enter the default port for your new apache:"
+read PORT
+while  [ $PORT -gt 65535 ]
+do
+      echo "$PORT must be less than 65536 ,please enter another one:"
+      read PORT
+done
+while lsof -i:$PORT>/dev/null 2>&1
+do
+      echo "$PORT is in use ,please set another one:"
+      read PORT
+done
+
+sed -e "s/Listen 80/Listen $PORT/" -i /usr/local/etc/$apache_name/conf/httpd.conf
+
+
+cp /usr/local/httpd/bin/apachectl /usr/local/httpd/bin/apachectl_$1
+sed "50i\# the config file of apache" -i /usr/local/httpd/bin/apachectl_$1
+sed "51i\CONF=\'\/usr\/local\/etc\/$apache_name\/conf\/httpd.conf\'" -i /usr/local/httpd/bin/apachectl_$1
+sed "s/\$HTTPD -k \$ARGV/\$HTTPD -k \$ARGVi -f \$CONF/" -i /usr/local/httpd/bin/apachectl_$1
+sed "s/\$HTTPD -t/\$HTTPD -t -f \$CONF/" -i /usr/local/httpd/bin/apachectl_$1
+sed "s/\$HTTPD \$ARGV/\$HTTPD \$ARGV -f \$CONF/" -i /usr/local/httpd/bin/apachectl_$1
+ln -s  /usr/local/httpd/bin/apachectl_$1 /usr/local/bin/
+
+cp /etc/rc.d/init.d/httpd /etc/rc.d/init.d/$apache_name
+sed "48i\OPTIONS=\'-f \/usr\/local\/etc\/$apache_name\/conf\/httpd.conf\'" -i /etc/rc.d/init.d/$apache_name
+sed "s/apachectl=\/usr\/local\/bin\/apachectl/apachectl=\/usr\/local\/bin\/apachectl_$1/" -i /etc/rc.d/init.d/$apache_name
+sed "s/prog=httpd/prog=$apache_name/" -i /etc/rc.d/init.d/$apache_name
+sed "s/pidfile=\${PIDFILE-\/var\/run\/httpd.pid}/pidfile=\$\{PIDFILE-\/var\/run\/$apache_name.pid\}/" -i /etc/rc.d/init.d/$apache_name
+sed "s/lockfile=\${LOCKFILE-\/var\/lock\/subsys\/httpd}/lockfile=\$\{LOCKFILE-\/var\/lock\/subsys\/$apache_name\}/" -i /etc/rc.d/init.d/$apache_name
+chkconfig --add $apache_name
+chkconfig $apache_name on
+
+mv /usr/local/etc/$apache_name/conf/logrotate /etc/logrotate.d/$apache_name
+sed "s/httpd/$apache_name/" -i /etc/logrotate.d/$apache_name
+
+echo                                                                          
+echo "#= Congratulations =========================================================="
+echo "#                                                                            "
+echo "# The new Apache has been installed on your system                           "
+echo "#                                                                            "
+echo "# You can use 'service $apache_name start' or 'apachectl_$1 -k start' to start the new apache "
+echo "#                                                                            "
+echo "# The default port of the apache is $PORT                                    "
+echo "#                                                                            "
+echo "# The ErrorLog is '/var/log/$apache_name/error_log'                          "
+echo "#                                                                            "
+echo "# The CustomLog is '/var/log/$apache_name/access_log'                        "
+echo "#                                                                            "
+echo "# And the config file of the apache is '/usr/local/etc/$apache_name/conf/httpd.conf' "
+echo "#                                                                            "
+echo "# You may need to modify the config file!                                    "
+echo "#                                                                            "
+echo "#============================================================================"
+echo  
+exit 0
+>>save it
+chmod 0744 /usr/local/app/create_apache
+
+
+# Create log directory
+mkdir /var/log/httpd
+
+# create ln
+ln -s /usr/local/httpd/bin/* /usr/local/bin
+
+# configure logrotate
+vi /etc/logrotate.d/httpd
+/var/log/httpd/*_log {
+    daily
+    rotate 20
+    compress
+    delaycompress
+    sharedscripts
+    postrotate
+        /bin/kill -HUP `cat /var/run/httpd.pid 2>/dev/null` 2> /dev/null || true
+    endscript
+}
+>>save it
+cp /etc/logrotate.d/httpd /usr/local/httpd/conf_bak/logrotate

@@ -1,0 +1,370 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.3(huang.shuai 2011-12-26): update to 0.8.7i
+#===3.0.2(huang.shuai 2011-10-01): update to 0.8.7h
+#===3.0.0(huang.shuai 2011-10-01): update to 0.8.7g, add spine
+#===2.2.2(huang.shuai 2010-04-28): remove logrotate for mysql-cacti
+#===2.2.0(huang.shuai 2009-12-31): created
+
+# Install rrdtool
+wget http://oss.oetiker.ch/rrdtool/pub/rrdtool.tar.gz
+tar zxf rrdtool.tar.gz
+cd rrdtool-1.4.5
+mkdir /usr/local/rrdtool-1.4.5
+ln -s /usr/local/rrdtool-1.4.5 /usr/local/rrdtool
+./configure --prefix=/usr/local/rrdtool CFLAGS=-fPIC
+make
+make install
+
+ln -s /usr/local/rrdtool/lib/perl/5.10.1/RRDp.pm /usr/local/lib64/perl5/
+ln -s /usr/local/rrdtool/lib/perl/5.10.1/x86_64-linux-thread-multi/RRDs.pm /usr/local/lib64/perl5/
+ln -s /usr/local/rrdtool/lib/perl/5.10.1/x86_64-linux-thread-multi/perllocal.pod /usr/local/lib64/perl5/
+ln -s /usr/local/rrdtool/lib/perl/5.10.1/x86_64-linux-thread-multi/auto/RRDp/ /usr/local/lib64/perl5/auto/
+ln -s /usr/local/rrdtool/lib/perl/5.10.1/x86_64-linux-thread-multi/auto/RRDs/ /usr/local/lib64/perl5/auto/
+
+# Add user
+groupadd -g 1994 cacti
+useradd -u 200901 -g cacti cacti
+
+# Get sources
+wget http://www.cacti.net/downloads/cacti-0.8.7i-PIA-3.1.tar.gz
+tar zxf ./cacti-0.8.7i-PIA-3.1.tar.gz -C /usr/local/
+ln -s /usr/local/cacti-0.8.7i-PIA-3.1 /usr/local/cacti
+chown -R cacti:cacti /usr/local/cacti-0.8.7i-PIA-3.1
+mkdir /var/log/cacti
+chmod 0755 /var/log/cacti
+touch /var/log/cacti/cacti.log
+chown -R apache_admin /var/log/cacti
+vi /usr/local/cacti/lib/database.php
+# Line 46
+        if (!preg_match('/^\d+$/', $port)) {
+                $dsn .= "&socket=" . $port;
+        }elseif ($port != "3306") {
+                $dsn .= "&port=" . $port;
+        }
+
+
+# Configure MySQL
+tar zxf mysql-cacti.tar.gz -C /var/db/
+cp my.cnf /var/db/cacti
+cp mysqld /var/db/cacti
+cp errmsg.sys /var/db/cacti
+chown -R cacti:cacti /var/db/cacti/*
+chmod +x /var/db/cacti/mysqld
+cd /var/db/cacti/
+./mysqld --defaults-file="/var/db/cacti/my.cnf" &
+
+/usr/local/mysql/bin/mysql -u root -S /var/db/cacti/mysql.sock
+DELETE FROM mysql.user; 
+DELETE FROM mysql.db;
+DROP DATABASE IF EXISTS test;
+GRANT ALL ON *.* TO root@'localhost' IDENTIFIED BY 'cactiuser' WITH GRANT OPTION;
+CREATE DATABASE cacti;
+GRANT ALL ON cacti.* TO 'cactiuser'@'localhost' IDENTIFIED BY 'cactiuser';
+
+/usr/local/mysql/bin/mysql -u root -S /var/db/cacti/mysql.sock cacti < /usr/local/cacti/cacti.sql
+
+# Configure cacti pre-install
+vi /usr/local/cacti/include/config.php
+$database_type = "mysqli";
+$database_default = "cacti";
+$database_hostname = "localhost";
+$database_username = "cactiuser";
+$database_password = "cactiuser";
+$database_port = "/var/db/cacti/mysql.sock";
+$database_ssl = false;
+
+chown -R cacti /usr/local/cacti/rra
+chown -R cacti /usr/local/cacti/log
+
+vi /usr/local/cacti/include/global.php
+# Line 101
+$url_path = '/cacti/';
+
+vi /etc/crontab
+*/5 * * * * cacti /usr/local/php/bin/php /usr/local/cacti/poller.php > /dev/null 2>&1
+
+# Install Spine
+wget http://www.cacti.net/downloads/spine/cacti-spine-0.8.7i.tar.gz
+tar zxf cacti-spine-0.8.7i.tar.gz
+mkdir /usr/local/spine
+ln -s /usr/lib64/libmysqlclient_r.so.16 /usr/lib64/libmysqlclient_r.so
+cd cacti-spine-0.8.7i
+./configure
+make
+cp spine /usr/local/spine/
+cp spine.conf.dist /usr/local/spine/spine.conf
+vi /usr/local/spine/spine.conf
+DB_Host         /var/db/cacti/mysql.sock
+DB_Database     cacti
+DB_User         cactiuser
+DB_Pass         cactiuser
+DB_Port         3306
+DB_PreG         0
+
+# Configure snmpd
+/usr/bin/net-snmp-config --create-snmpv3-user -A cactiuser -a SHA -x DES cactiuser
+vi /etc/snmp/snmpd.conf
+
+#com2sec notConfigUser  default       public
+#group   notConfigGroup v1           notConfigUser
+#group   notConfigGroup v2c           notConfigUser
+#view    systemview    included   .1.3.6.1.2.1.1
+#view    systemview    included   .1.3.6.1.2.1.25.1.1
+#access  notConfigGroup ""      any       noauth    exact  systemview none none
+rouser cactiuser
+>>Save&Exit
+
+chkconfig snmpd on
+
+# Web installer 
+
+ln -s /usr/local/cacti /var/www/admin_site/htdocs/cacti
+
+# Point your web browser to: https://serveraddress:8888/cacti
+# Access the web page: Cacti Installation Guide
+
+# Page 1
+press Next >> button
+# Page 2
+Check Box"Please select the type of installation" select "New Install"
+press Next >> button
+# Page 3
+Correct the path of required software binary:
+RRDTool Binary Path: /usr/local/rrdtool/bin/rrdtool
+PHP Binary Path: /usr/local/bin/php
+snmpwalk Binary Path: /usr/bin/snmpwalk
+snmpget Binary Path: /usr/bin/snmpget
+snmpbulkwalk Binary Path: /usr/bin/snmpbulkwalk
+snmpgetnext Binary Path: /usr/bin/snmpgetnext
+Cacti Log File Path: /var/log/cacti/cacti.log
+SNMP Utility Version: NET-SNMP 5.x
+press Finish button
+
+
+# First Login (must do it)
+
+# first login use default user and password:
+user:admin
+passwd:admin
+# Then, be forced to change password
+input and confirm the new password
+
+# Apply Patches
+
+# get patches for cacti
+cd /usr/local/cacti
+wget http://www.cacti.net/downloads/patches/0.8.7i/settings_checkbox.patch
+patch -p1 -N < settings_checkbox.patch
+
+# Install Apache Plug-in
+# http://forums.cacti.net/about25227.html
+cd /usr/local/src
+wget http://forums.cacti.net/download/file.php?id=18576
+mv file.php\?id\=18576 ApacheStats_0.8.2.zip
+unzip ./ApacheStats_0.8.2 -d ./
+cp /usr/local/src/ApacheStats_0.8.2/ss_apache_stats.php /usr/local/cacti/scripts/
+
+login to cacti and Import the xml file called cacti_host_template_webserver_-_apache.xml in the /usr/local/src/ApacheStats_0.8.2/ folder
+
+
+# Install MySQL Plug-in
+
+cd /usr/local/src
+wget http://mysql-cacti-templates.googlecode.com/files/better-cacti-templates-1.1.8.tar.gz
+tar zxf ./better-cacti-templates-1.1.8.tar.gz
+cp /usr/local/src/better-cacti-templates-1.1.8/scripts/ss_get_mysql_stats.php /usr/local/cacti/scripts/
+
+vi /usr/local/cacti/scripts/ss_get_mysql_stats.php
+$chk_options = array (
+   'innodb' => true,    # Do you want to check InnoDB statistics?
+   'master' => false,    # Do you want to check binary logging?
+   'slave'  => false,    # Do you want to check slave status?
+   'procs'  => true,    # Do you want to check SHOW PROCESSLIST?
+   'get_qrt' => false,   # Get query response times from Percona Server?
+);
+
+login to cacti and Import the xml file called cacti_host_template_x_mysql_server_ht_0.8.6i-sver1.1.8.xml in the /usr/local/src/better-cacti-templates-1.1.8 folder
+
+# Add Threshold plugin
+cd /usr/local/cacti/plugins/
+wget http://cactiusers.org/downloads/settings.tar.gz
+tar zxf settings-0.5.tar.gz
+wget http://cactiusers.org/downloads/thold.tar.gz
+tar zxf thold-0.4.3.tar.gz
+rm -f *.tar.gz
+
+vi /usr/local/cacti/include/plugins.php
+$plugins_system = array('settings', 'boost', 'dsstats', 'thold');
+>> Save & Exit
+
+mysql -S /var/db/cacti/mysql.sock -u root cacti < /usr/local/cacti/plugins/thold/thold.sql
+
+# Settings
+
+Login to the cacti with admin user
+
+# Remove authentication
+User Management->admin
+Password: ****** (same as httpd_admin's admin)
+Authentication Realm: Web Basic
+Realm Permissions: check Plugin Management 
+
+Console->Settings->Authentication
+Authentication Method: Web Basic Authentication
+
+# Enable thold
+Plugin Management -> Settings
+Install
+Plugin Management -> Thold
+Install
+Enable
+
+# Add Setting
+Console->Settings->General
+RRDTool Utility Version: RRDTool 1.4.x
+SNMP Version: Version 3
+SNMP Username (v3): cactiuser
+SNMP Password (v3): cactiuser
+SNMP Auth Protocol (v3): SHA
+SNMP Privacy Protocol (v3): None
+Save
+
+Console->Settings->Thresholds
+Save
+
+# Spine
+Console->Settings->Paths
+Spine Poller File Path: /usr/local/spine/spine
+Save
+
+Console->Settings->Poller
+Poller Type: spine
+Save
+
+# Create devices 
+Console->Devices
+Localhost
+SNMP Version: Version 3
+SNMP Auth Protocol (v3): SHA
+SNMP Privacy Protocol (v3): None
+save
+
+Add
+Description: Apache
+Hostname: 127.0.0.1
+Select Host Template: WebServer-Apache
+Create
+
+Add
+Description: MySQL
+Hostname: 127.0.0.1
+Select Host Template: X MySQL Server HT
+Create
+
+# Create Graphics
+Console->New Graphs
+Host: Apache(127.0.0.1)
+Check all graphic templates
+Create
+
+Host: MySQL(127.0.0.1)
+Check
+X InnoDB Buffer Pool Activity GT
+X InnoDB Buffer Pool GT
+X InnoDB I/O GT
+X InnoDB I/O Pending GT
+X InnoDB Tables In Use GT
+X InnoDB Transactions GT
+X MyISAM Indexes GT
+X MySQL Command Counters GT
+X MySQL Connections GT
+X MySQL Files and Tables GT
+X MySQL Handlers GT
+X MySQL Network Traffic GT
+X MySQL Processlist GT
+X MySQL Query Cache GT
+X MySQL Select Types GT
+X MySQL Temporary Objects GT
+Create
+
+Console->Graph Management
+check Localhost - Memory Usage
+delete
+Delete all data sources referenced by these graphs. 
+yes
+
+# Add host graphics to the Graph Tree
+Console->Graph Trees->Default Tree
+Add
+Tree Item Type: Host
+host: Apache(127.0.0.1)
+Create
+
+Add
+Tree Item Type: Host
+host: MySQL(127.0.0.1)
+Create
+
+Save
+
+# Add Graph
+
+# Disk IO Usage
+wget http://docs.cacti.net/_media/usertemplate:data:host_mib:diskio087d.tar.gz
+mv usertemplate\:data\:host_mib\:diskio087d.tar.gz\?id\=usertemplate\:data\:host_mib\:diskio diskio087d.tar.gz
+tar zxf diskio087d.tar.gz
+mv disk_io.xml /usr/local/cacti/resource/snmp_queries/
+
+login to cacti and Import the xml file called cacti087d_data_query_snmp_-_get_disk_io.xml
+
+# Net-SNMP *NIX Memory Usage
+wget http://www.eric-a-hall.com/software/cacti-netsnmp-memory/cacti-netsnmp-memory.0.7.tar.gz
+tar zxf cacti-netsnmp-memory.0.7.tar.gz
+cp cacti-netsnmp-memory/scripts/ss_netsnmp_memory.php /usr/local/cacti/scripts/
+
+login to cacti and Import the xml file called netsnmp_memory_graph_template.xml
+
+Console->Host Templates->Local Linux Machine
+Associated Graph Templates->Add Graph Template: Host Memory - ucd/net - Memory Usage 
+Associated Data Queries->Add Data Query: SNMP - Get Disk IO 
+Associated Data Queries->Add Data Query: SNMP - Interface Statistics
+Associated Data Queries->Add Data Query: SNMP - Get Processor Information 
+Save
+
+Console->Devices->Localhost
+Associated Graph Templates->Add Graph Template: Host Memory - ucd/net - Memory Usage
+Associated Data Queries->Add Data Query: SNMP - Get Disk IO 
+Associated Data Queries->Add Data Query: SNMP - Interface Statistics
+Associated Data Queries->Add Data Query: SNMP - Get Processor Information 
+Save
+
+Console->New Graphs
+Localhost (127.0.0.1)
+check
+Host Memory - ucd/net - Memory Usage
+all in Get Mounted Partitions
+sda in Get Disk IO
+all in Processor Index Number
+eth0 in Interface Statistics (Select a graph type: In/Out Bytes)
+create
+
+
+# configure logrotate
+vi /etc/logrotate.d/cacti
+/var/log/cacti/cacti.log {
+    notifempty
+    size=100M
+    rotate 3
+    missingok
+    compress
+}
+>>save it
+

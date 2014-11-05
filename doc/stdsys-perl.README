@@ -1,0 +1,23 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.0(huang.shuai 2011-10-01): update apache to 2.2.20
+
+use cpan install 
+Apache-DBI
+CGI
+DBD-mysql
+DBI
+HTML-Parser
+HTML-Tagset
+Term-ReadKey
+Term-ReadLine
+
+update CPAN to newest version
+install Term-ReadLine-Gnu to solve CPAN readline problem

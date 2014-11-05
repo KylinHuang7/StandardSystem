@@ -1,0 +1,150 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.0(huang.shuai 2011-10-01): Update to 3.0.0
+#===2.1.6(huang.shuai 2009-12-31): Update to 2.1.6
+#===1.0.0(xie.hang 2006-10-18): create
+
+1.Install nagios
+
+1.1 Download the source of nagios from http://www.nagios.org/download
+wget http://prdownloads.sourceforge.net/sourceforge/nagios/nagios-3.3.1.tar.gz
+
+1.2 Add user and group
+groupadd -g 1986 nagios
+useradd -u 200610 -g nagios nagios
+groupadd -g 1993 nagcmd
+usermod -G nagcmd apache_admin
+usermod -G nagcmd nagios
+
+1.3 Make dictionary 
+mkdir /usr/local/nagios
+chown nagios:nagios /usr/local/nagios
+
+1.4 Build
+tar xzf nagios-3.3.1.tar.gz
+cd nagios
+./configure --prefix=/usr/local/nagios --with-gd-lib=/usr/local/lib --with-gd-inc=/usr/local/include
+make all
+make install
+make install-init
+make install-commandmode
+make install-config
+
+
+2.Install nagios-plugins
+
+wget http://prdownloads.sourceforge.net/sourceforge/nagiosplug/nagios-plugins-1.4.15.tar.gz
+tar xzf nagios-plugins-1.4.15.tar.gz
+cd nagios-plugins-1.4.15
+./configure --prefix=/usr/local/nagios-plugins --with-mysql
+make all
+make install
+
+mv -f /usr/local/nagios-plugins/libexec /usr/local/nagios/
+
+
+3.Install nrpe
+wget http://prdownloads.sourceforge.net/sourceforge/nagios/nrpe-2.12.tar.gz
+tar xzf nrpe-2.12.tar.gz
+cd nrpe-2.12
+./configure --enable-ssl --enable-command-args
+make all 
+cp src/check_nrpe /usr/local/nagios/libexec 
+cp ./sample-config/nrpe.cfg /usr/local/nagios/etc/
+cp src/nrpe /usr/local/nagios/bin
+cp init-script /usr/local/nagios/bin/nagios-nrpe
+chmod 0755 /usr/local/nagios/bin/nagios-nrpe
+
+4. Add nrpe to services
+vi /etc/services
+>>add the codes below
+nrpe            5666/tcp        # NRPE
+>>save it
+
+
+5.configure nagios
+
+5.1 config apache-admin
+>>add a dictionary to admin-site
+mkdir /var/www/admin_site/htdocs/nagios
+
+>>add nagios.conf
+vi /var/www/admin_site/conf/httpd/hosts/nagios.conf
+
+scriptalias  /nagios/cgi-bin /usr/local/nagios/sbin
+<Directory "/usr/local/nagios/sbin">
+        allowoverride authconfig
+        options execcgi
+        order allow,deny
+        allow from all
+</directory>
+alias /nagios /usr/local/nagios/share
+<directory "/usr/local/nagios/share">
+        options none
+        allowoverride authconfig
+        order allow,deny
+        allow from all
+</directory>
+>>save it
+
+5.2 config nagios
+mkdir /var/log/nagios
+cd /usr/local/nagios/etc/
+
+vi cgi.cfg
+use_authentication=0
+>>change use_authentication=1 to use_authentication=0,so that we can see all the pages
+
+vi nagios.cfg
+log_file=/var/log/nagios/nagios.log
+>>then we can test the configuration
+/usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+
+
+6.Create app script
+vi /usr/local/app/nagios 
+#!/bin/sh
+
+# description: the nagios MTA
+
+SERVICE="nagios"
+
+case "$1" in
+  start)
+    service nagios start
+    ;;
+  stop)
+    service nagios stop
+    ;;
+  stat)
+    service nagios status
+    ;;
+  restart)
+    service nagios reload
+    ;;
+  help)
+    cat <<HELP
+   stop -- stops $SERVICE service
+  start -- starts $SERVICE service
+   stat -- displays status of $SERVICE service
+restart -- stops and restarts $SERVICE
+HELP
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|stat|help}"
+    exit 1
+    ;;
+esac
+
+exit 0
+>>save it
+chmod 0755 /usr/local/app/nagios
+chkconfig --level 345 nagios on
+

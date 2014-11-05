@@ -1,0 +1,73 @@
+#=====================================================================
+#=== Title : Standard System Develop Guide : Build RPM & YUM repo  ===
+#=====================================================================
+#=== Author: huang.shuai                                           ===
+#===         From TS Department, Adways                            ===
+#=====================================================================
+
+#### Build RPM
+
+# Install rpm-build
+yum install rpm-build
+
+# spec File
+
+# The following fields will be shown in rpm info
+Name: 
+Summary: 
+Version: 
+Release: 
+Vendor:
+Copyright:
+Group:
+URL:
+
+Source: # include all the files needed by this package, if has many, use Source1, Source2, ...
+BuildRoot: # the directory building rpm
+Requires: # this package requires which package
+PreReq: # this package's installation requires which package
+Autoreq: # whether the rpm-build help you to generate requires or not
+%description
+# package description
+
+%prep
+# unpack the source file
+
+%build
+# make or do something
+
+%install
+# copy the files to $RPM_BUILD_ROOT
+
+%clean
+# clean
+
+%files
+# which files should be included into the rpm
+
+%pre
+# jobs before rpm installation
+
+%post
+# jobs after rpm installation
+
+%preun
+# jobs before rpm uninstallation
+
+%postun
+# jobs after rpm uninstallation
+
+# in pre, post, preun, postun section, you can use $1: 0 - uninstall, 1 - install, 2 - upgrade
+# when upgrade, run this orders:
+#   new version rpm's pre
+#   install new version rpm's files 
+#   new version rpm's post
+#   old version rpm's preun
+#   delete old version rpm's files which not be overwrited by new version rpm
+#   old version rpm's postun
+
+%changelog
+# changelogs
+
+#### YUM repo
+need comps.xml for group info

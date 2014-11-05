@@ -1,0 +1,63 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.2(huang.shuai 2012-04-25): Update
+#===3.0.0(huang.shuai 2011-10-01): Create
+
+# Install msgpack
+wget http://pypi.python.org/packages/source/m/msgpack-python/msgpack-python-0.1.13.tar.gz
+tar zxf msgpack-python-0.1.13.tar.gz
+cd msgpack-python-0.1.13
+python setup.py build
+python setup.py install
+
+# Install cjson
+wget http://pypi.python.org/packages/source/p/python-cjson/python-cjson-1.0.5.tar.gz
+tar zxf python-cjson-1.0.5.tar.gz
+cd python-cjson-1.0.5
+python setup.py build
+python setup.py install
+
+# Install simplejson
+wget http://pypi.python.org/packages/source/s/simplejson/simplejson-2.5.0.tar.gz
+tar zxf simplejson-2.5.0.tar.gz
+cd simplejson-2.5.0
+python setup.py build
+python setup.py install
+
+# Install MySQLdb
+wget http://downloads.sourceforge.net/project/mysql-python/mysql-python/1.2.3/MySQL-python-1.2.3.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fmysql-python%2F&ts=1317285832&use_mirror=nchc
+tar zxf MySQL-python-1.2.3.tar.gz
+cd MySQL-python-1.2.3
+python setup.py build
+python setup.py install
+
+# Install webpy
+wget http://webpy.org/static/web.py-0.36.tar.gz
+tar zxf web.py-0.36.tar.gz
+cd web.py-0.36
+python setup.py build
+python setup.py install
+
+# Install Jinja2
+wget http://pypi.python.org/packages/source/J/Jinja2/Jinja2-2.6.tar.gz
+tar zxf Jinja2-2.6.tar.gz
+cd Jinja2-2.6
+python setup.py build
+python setup.py install
+
+# Install PycURL
+# already installed 7.19.0
+
+# Install ipython
+wget http://archive.ipython.org/release/0.12.1/ipython-0.12.1.tar.gz
+tar zxf ipython-0.12.1.tar.gz
+cd ipython-0.12.1
+python setup.py build
+python setup.py install

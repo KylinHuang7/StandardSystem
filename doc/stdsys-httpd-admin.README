@@ -1,0 +1,297 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.4(huang.shuai 2012-04-28): update php to 5.3.11
+#===3.0.0(huang.shuai 2011-10-01): update apache to 2.2.20
+#===2.2.0(huang.shuai 2009-12-31): Update to 2.2.0
+#===2.0.2(xie.hang 2007-06-22): update apache zendOptimizer php phpMyadmin imap
+#===2.0.1(xie.hang 2006-09-20): add compile option --with-gettext --with-imap to#php
+#===2.0.0(huang.shuai 2006-07-05): document format
+
+### Install apache
+  
+# Download apache
+>>> Download the latest apache source from http://httpd.apache.org/
+wget http://www.apache.org/dist/httpd/httpd-2.2.20.tar.gz
+
+# Unpack package
+tar zxf httpd-2.2.20.tar.gz
+
+# Configuration and installation
+
+>>> Prepare prefix
+mkdir /usr/local/httpd-2.2.20-admin
+ln -s /usr/local/httpd-2.2.20-admin /usr/local/httpd-admin
+
+>>> Here make sure you have installed openssl-devel and openldap-devel, or you may receive a config failure
+mkdir /usr/local/ssl
+
+cd httpd-2.2.20
+./configure --prefix=/usr/local/httpd-admin --enable-so --enable-ssl=shared --enable-authnz-ldap=shared --enable-mods-shared=all --with-ssl=/usr/local/ssl --with-ldap --with-ldap-include=/usr/include --with-ldap-lib=/usr/lib64 --with-included-apr --enable-rewrite
+make
+make install
+
+# Install mod_fastcgi
+wget http://www.fastcgi.com/dist/mod_fastcgi-current.tar.gz
+tar zxf mod_fastcgi-current.tar.gz
+cd mod_fastcgi-2.4.6/
+cp Makefile.AP2 Makefile
+make top_dir=/usr/local/httpd-admin
+make install top_dir=/usr/local/httpd-admin
+
+### Use our typical httpd 'conf' files, adjust structure
+
+# Remove 'conf' directory
+rm -rf /usr/local/httpd-admin/conf
+
+# Copy 'conf' directory from Module admin_site_CONF to/usr/local/httpd-admin/
+mkdir /usr/local/httpd-admin/conf
+cp config/StdSys3_CONF_httpd-admin.tar.gz /usr/local/httpd-admin/conf
+cd /usr/local/httpd-admin/conf
+tar zxf StdSys3_CONF_httpd-admin.tar.gz
+rm -f StdSys3_CONF_httpd-admin.tar.gz
+
+# Construct admin_site file structure
+mkdir -p \
+ /var/www/admin_site/cgi-bin\
+ /var/www/admin_site/conf\
+ /var/www/admin_site/data\
+ /var/www/admin_site/htdocs
+
+cd /var/www/admin_site/cgi-bin/
+touch php5.fcgi
+chmod +x php5.fcgi
+cp -a /usr/local/httpd-admin/conf /var/www/admin_site/conf/httpd
+
+# Adjust
+mv /usr/local/httpd-admin/conf /usr/local/httpd-admin/conf.default
+ln -s /var/www/admin_site/conf/httpd /usr/local/httpd-admin/conf
+
+
+### Install php
+# Install imap,for support imap mail system
+>>>Download the latest imap from ftp://ftp.cac.washington.edu/imap
+wget ftp://ftp.cac.washington.edu/imap/imap.tar.gz
+tar zxf imap.tar.gz
+cd imap-2007f
+make lr5 EXTRACFLAGS=-fPIC
+mkdir lib include
+cd c-client/
+cp *.h ../include/
+cp *.c ../lib/
+cp c-client.a ../lib/libc-client.a
+
+# Install php
+>>> Download the latest php source from http://www.php.net
+wget http://cn2.php.net/get/php-5.3.11.tar.gz/from/this/mirror
+tar zxf php-5.3.11.tar.gz
+
+# Add memcache extension
+wget http://pecl.php.net/get/memcache-2.2.6.tgz
+tar zxf memcache-2.2.6.tgz
+mv memcache-2.2.6 php-5.3.11/ext/memcache
+
+# Add APC extension
+wget http://pecl.php.net/get/APC-3.1.9.tgz
+tar zxf APC-3.1.9.tgz
+mv APC-3.1.9 php-5.3.11/ext/apc
+
+>>> Prepare prefix
+mkdir /usr/local/php-5.3.11
+ln -s /usr/local/php-5.3.11 /usr/local/php
+
+cd php-5.3.11
+rm -f configure autom4te.cache
+PHP_AUTOCONF=/usr/bin/autoconf-2.13 ./buildconf --force
+./configure --prefix=/usr/local/php --with-apxs2=/usr/local/httpd-admin/bin/apxs --with-config-file-path=/var/www/admin_site/conf --with-libdir=lib64 --with-jpeg-dir --with-png-dir --with-gd --with-freetype-dir --enable-mbstring --with-zlib --with-mysql=mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-gettext --with-imap=/usr/local/src/imap-2007f --with-imap-ssl --with-curl --with-pear --with-mcrypt --with-openssl --with-ldap --with-regex --enable-soap --with-snmp=/usr --enable-gd-native-ttf --enable-mysqlnd --enable-apc --enable-memcache --enable-sockets
+make
+cp libs/libphp5.so /usr/local/httpd-admin/modules/
+
+cp php.ini-development /var/www/admin_site/conf/php.ini
+
+vi /var/www/admin_site/conf/php.ini
+session.save_path = "/tmp"
+date.timezone = "Asia/Shanghai"
+
+
+# Add some useful scripts
+vi /usr/local/app/httpd-admin
+ 
+#!/bin/sh
+
+# description: the httpd-admin MTA
+
+SERVICE="httpd-admin"
+
+case "$1" in
+  start)
+    service httpd-admin start
+    ;;
+  stop)
+    service httpd-admin stop
+    ;;
+  stat)
+    service httpd-admin status
+    ;;
+  restart)
+    service httpd-admin restart
+    ;;
+  help)
+    cat <<HELP
+   stop -- stops $SERVICE service
+  start -- starts $SERVICE service
+   stat -- displays status of $SERVICE service
+restart -- stops and restarts $SERVICE
+HELP
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|stat|help}"
+    exit 1
+    ;;
+esac
+
+exit 0
+
+>>> Save it
+chmod 0755 /usr/local/app/httpd-admin
+
+# Add directory /var/log/httpd-admin
+mkdir /var/log/httpd-admin
+
+# Add password config files
+cd /usr/local/httpd-admin/bin
+./htpasswd -c /var/www/admin_site/conf/.htpasswd admin
+>>> Input Std*****
+>>> Again Std*****
+
+groupadd -g 1985 apache_admin
+useradd -u 200602 -g apache_admin apache_admin
+#In our System, httpd-admin is run as user apache_admin, so you need to add this user
+#And in practice, we add the upper to command in script 'install'
+
+>>> Now,you may test your php installation
+>>> What you need to do is create a test php script named phpinfo.php under /var/www/admin_site/htdocs/
+>>> There is only one line like <?php phpinfo(); ?> in the script
+>>> If you can successfully access http://your_server_ip/phpinfo.php and see phpinfos, it's OK!
+>>> Of course you must input username admin, password Std*****
+
+# create ssl CA 
+#you may only do this work for the first time
+#and the CA will be included in our typical module admin_site_CONF
+
+wget http://www.openssl.org/contrib/ssl.ca-0.1.tar.gz
+tar zxf ssl.ca-0.1.tar.gz
+cd ssl.ca-0.1
+./new-root-ca.sh   # to create root ca
+
+Enter pass phrase for ca.key:httpdadmin
+Verifying - Enter pass phrase for ca.key:httpdadmin
+
+Enter pass phrase for ca.key:httpdadmin
+
+Country Name (2 letter code) [MY]:CN
+State or Province Name (full name) [Perak]:ShangHai
+Locality Name (eg, city) [Sitiawan]:ShangHai
+Organization Name (eg, company) [My Directory Sdn Bhd]:Adways
+Organizational Unit Name (eg, section) [Certification Services Division]:Technology Support
+Common Name (eg, MD Root CA) []:KylinHuang
+Email Address []:huang.shuai@sh.adways.net
+
+./new-server-cert.sh server
+
+Country Name (2 letter code) [MY]:CN
+State or Province Name (full name) [Perak]:ShangHai
+Locality Name (eg, city) [Sitiawan]:ShangHai
+Organization Name (eg, company) [My Directory Sdn Bhd]:Adways
+Organizational Unit Name (eg, section) [Secure Web Server]:Technology Support
+Common Name (eg, www.domain.com) []:dev.adways.net
+Email Address []:huang.shuai@sh.adways.net
+
+./sign-server-cert.sh server
+
+Enter pass phrase for ./ca.key:httpdadmin
+Sign the certificate? [y/n]:y
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+
+chmod 400 server.key
+
+>>> As the default configure in httpd-ssl.conf is like this:
+>>> SSLCertificateFile /usr/local/httpd-admin/conf/server.crt
+>>> SSLCertificateKeyFile /usr/local/httpd-admin/conf/server.key
+>>> We need to put server.crt and server.key under httpd-admin/conf
+>>> Maybe:
+cp server.crt server.key /usr/local/httpd-admin/conf/
+
+# configure logrotate
+vi /etc/logrotate.d/httpd-admin
+/var/log/httpd-admin/*_log {
+    daily
+    rotate 20
+    compress
+    delaycompress
+    sharedscripts
+    postrotate
+        /bin/kill -HUP `cat /var/run/httpd-admin.pid 2>/dev/null` 2> /dev/null || true
+    endscript
+}
+>>save it
+
+### Tools installation
+
+# Install phpMyAdmin
+
+>>> Download phpMyAdmin from http://www.phpmyadmin.net/home_page/index.php
+wget http://downloads.sourceforge.net/project/phpmyadmin/phpMyAdmin/3.2.4/phpMyAdmin-3.2.4-all-languages.tar.gz?use_mirror=ncu
+>>> Unpack phpMyAdmin-3.4.4-all-languages.tar.gz under /var/www/admin_site/htdocs
+cp phpMyAdmin-3.4.4-all-languages.tar.gz /var/www/admin_site/htdocs
+cd /var/www/admin_site/htdocs
+tar zxf phpMyAdmin-3.4.4-all-languages.tar.gz
+mv phpMyAdmin-3.4.4-all-languages/ mysql_main
+rm -f phpMyAdmin-3.4.4-all-languages.tar.gz
+
+>>> Configure it
+cd mysql_main
+vi libraries/config.default.php #if version is earlier than phpMyAdmin-2.7, this file is under mysql_main
+>>> Modify it as follows:
+
+$cfg['blowfish_secret']             = 'aabbccdd';   #here you may use any string you like
+$cfg['Servers'][$i]['host']          = '127.0.0.1'; #localhost is invalid
+$cfg['Servers'][$i]['socket']        = ''; 
+$cfg['Servers'][$i]['connect_type']  = 'tcp'; 
+$cfg['Servers'][$i]['auth_type']    = 'cookie'; 
+$cfg['Servers'][$i]['user']         = ''; 
+$cfg['AllowUserDropDatabase']       = true;
+$cfg['Servers'][$i]['AllowNoPassword'] = true;
+
+>>> Save it
+>>> Test https://your_server_ip:8888/mysql_main/index.php
+>>> username root,no password 
+  
+# Install phpsysinfo
+>>> Download phpsysinfo from http://sourceforge.net/projects/phpsysinfo/
+wget http://downloads.sourceforge.net/project/phpsysinfo/phpsysinfo/3.0.14/phpsysinfo-3.0.14.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fphpsysinfo%2F&ts=1315995940&use_mirror=ncu
+>>> Unpack phpsysinfo.tar.gz under /var/www/admin_site/htdocs
+cp phpsysinfo-3.0.14.tar.gz /var/www/admin_site/htdocs
+cd /var/www/admin_site/htdocs
+tar zxf phpsysinfo-3.0.14.tar.gz
+cd phpsysinfo
+cp config.php.new config.php
+cd ..
+rm -f phpsysinfo-3.0.14.tar.gz
+>>> Test https://your_server_ip:8888/phpsysinfo/index.php
+  
+# Install iProber
+>>> Download iProber.php from http://depoch.net/download.htm
+unzip iProber-0.0.24.zip
+cp iProber.php /var/www/admin_site/htdocs
+rm -f iProber*
+>>> Edit iProber.php,remove advertisement from code, save
+>>> Test https://your_server_ip:8888/iProber.php
+

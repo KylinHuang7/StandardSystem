@@ -1,0 +1,109 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.0(huang.shuai 2011-10-01): update mysql to 5.5.15
+#===2.2.2(huang.shuai 2010-04-28): add user logflush for logrotate
+#===2.2.0(huang.shuai 2009-12-31): Update to 2.2.0
+#===2.0.5(xie.hang 2007-12-19): update mysql from 5.0.41 to 5.0.45
+#===2.0.4(xie.hang 2007-05-30): update mysql from 5.0.27 to 5.0.41
+#===2.0.3(xie.hang 2006-11-01); update mysql from 5.0.18 to 5.0.27
+#===2.0.2(xie.hang 2006-09-20): modified
+#===2.0.1(huang.shuai 2006-07-05): document format
+#===2.0.0(yang.fang 2006-05-15): modified
+
+1.Initialize database and config my.cnf
+mkdir /var/db/main
+cd /usr/local/mysql
+scripts/mysql_install_db --datadir=/var/db/main/
+
+ln -s /etc/my.cnf /var/db/main/
+
+>>> Change database owner and group to mysql
+chmod 0755 /var/db/main
+chown mysql /var/db/main
+chown mysql:mysql /var/db/main/mysql
+chown mysql:mysql /var/db/main/mysql/*
+chown mysql:mysql /var/db/main/test
+
+2.Copy script to /etc/init.d
+cp /usr/local/mysql/support-files/mysql.server /etc/rc.d/init.d/mysql
+chkconfig --level 345 mysql on
+
+3.Add file /usr/local/app/mysql-main
+vi /usr/local/app/mysql-main
+>>> Add the following context
+#!/bin/sh
+
+# description: the mysql-main MTA
+
+SERVICE="mysql-main"
+
+case "$1" in
+  start)
+    service mysql start
+    ;;
+  stop)
+    service mysql stop
+    ;;
+  stat)
+    service mysql status
+    ;;
+  restart)
+    service mysql restart
+    ;;
+  help)
+    cat <<HELP
+   stop -- stops $SERVICE service
+  start -- starts $SERVICE service
+   stat -- displays status of $SERVICE service
+restart -- stops and restarts $SERVICE
+HELP
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|stat|help}"
+    exit 1
+    ;;
+esac
+
+exit 0
+
+>>> Save the file and exit
+chmod 0744 /usr/local/app/mysql-main
+
+4.Drop database which is named test, create password for 'root' at '%'
+/usr/local/mysql/bin/mysql -u root -S /var/db/main/mysql.sock
+DELETE FROM mysql.user; 
+DELETE FROM mysql.db;
+DROP DATABASE IF EXISTS test;
+GRANT ALL ON *.* TO root@'localhost' WITH GRANT OPTION;
+GRANT ALL ON *.* TO root@'127.0.0.1' WITH GRANT OPTION;
+GRANT RELOAD ON *.* TO logflush@'localhost' IDENTIFIED BY 'logflushpass';
+
+#add for mysql module of cacti
+GRANT PROCESS ON *.* TO cactiuser@'127.0.0.1' IDENTIFIED BY 'cactiuser';
+
+5.configure logrotate
+vi /etc/logrotate.d/mysql-main
+/var/db/main/mysql.log /var/db/main/mysql-slow.log {
+        # create 600 mysql mysql
+        notifempty
+        size=100M
+        rotate 3
+        missingok
+        compress
+    postrotate
+        # just if mysqld is really running
+        if test -x /usr/local/mysql/bin/mysqladmin && \
+           /usr/local/mysql/bin/mysqladmin -u logflush -plogflushpass ping &>/dev/null
+        then
+           /usr/local/mysql/bin/mysqladmin -u logflush -plogflushpass flush-logs
+        fi
+    endscript
+}
+>>save it

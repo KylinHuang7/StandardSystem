@@ -1,0 +1,91 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.0(huang.shuai 2011-10-01): Update to 3.0.0
+#===2.1.6(huang.shuai 2009-12-31): Update to 2.1.6
+#===1.0.0(xie.hang 2006-08-23): Create
+
+### logcheck ###
+
+# Download the source of logcheck from http://sourceforge.net/projects/logcheck/
+wget http://downloads.sourceforge.net/project/logcheck/logcheck-1.1.2/Logcheck%20under%20new%20mgmt./logcheck-1.1.2.tar.gz?use_mirror=ncu
+
+# unpack it
+tar zxf logcheck-1.1.2.tar.gz
+
+# edit "Makefile" to fit the Stdsys's file system
+cd logcheck-1.1.2
+vi Makefile
+
+# Change the settings as below:
+CFLAGS = -O
+change to:
+CFLAGS = -O9 -funroll-loops -ffast-math -march=nocona -fomit-frame-pointer -fno-exceptions
+
+INSTALLDIR = /usr/local/etc
+change to:
+INSTALLDIR = /usr/local/logcheck
+
+INSTALLDIR_BIN = /usr/local/bin
+change to:
+INSTALLDIR_BIN = /usr/bin
+
+INSTALLDIR_SH = /usr/local/etc
+change to:
+INSTALLDIR_SH = /usr/bin
+
+TMPDIR = /usr/local/etc/tmp
+change to:
+TMPDIR = /usr/local/logcheck/tmp
+
+# Second Step:
+vi +67 Makefile
+
+# Change settings as below:
+@if [ ! -d $(TMPDIR) ]; then /bin/mkdir $(TMPDIR); fi
+change to:
+@if [ ! -d $(TMPDIR) ]; then /bin/mkdir -p $(TMPDIR); fi
+
+# Install Logcheck:
+make linux
+
+# edit "/usr/bin/logcheck.sh"
+vi /usr/bin/logcheck.sh
+
+# Change the following settings as below:
+LOGTAIL=/usr/local/bin/logtail
+change to:
+LOGTAIL=/usr/bin/logtail
+
+TMPDIR=/usr/local/etc/tmp
+change to:
+TMPDIR=/usr/local/logcheck/tmp
+
+HACKING_FILE=/usr/local/etc/logcheck.hacking
+change to:
+HACKING_FILE=/usr/local/logcheck/logcheck.hacking
+
+VIOLATIONS_FILE=/usr/local/etc/logcheck.violations
+change to:
+VIOLATIONS_FILE=/usr/local/logcheck/logcheck.violations
+
+VIOLATIONS_IGNORE_FILE=/usr/local/etc/logcheck.violations.ignore
+change to:
+VIOLATIONS_IGNORE_FILE=/usr/local/logcheck/logcheck.violations.ignore
+
+IGNORE_FILE=/usr/local/etc/logcheck.ignore
+change to:
+IGNORE_FILE=/usr/local/logcheck/logcheck.ignore
+
+
+# Make it as a cronjob
+vi /etc/crontab
+
+#add the codes as following
+05 6 * * * /usr/bin/logcheck.sh

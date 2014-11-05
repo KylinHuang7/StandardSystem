@@ -1,0 +1,159 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.0(huang.shuai 2011-10-01): Update
+#===2.2.0(huang.shuai 2009-12-31): created
+
+1.
+groupadd -g 1995 vmail
+useradd -u 200902 -g vmail vmail >/dev/null 2>&1
+
+2.
+vi /etc/postfix/main.cf
+
+inet_interfaces = localhost
+mydestination = $myhostname, localhost.$mydomain, localhost
+
+#smtp auth
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+smtpd_sasl_security_options = noanonymous
+smtpd_recipient_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination
+broken_sasl_auth_clients = yes
+smtpd_sasl_authenticated_header = yes
+
+#virtual mailbox domain
+virtual_mailbox_domains = /etc/postfix/vdomains
+virtual_mailbox_base = /var/vmail
+virtual_mailbox_maps = hash:/etc/postfix/vmailbox
+virtual_uid_maps = static:200902
+virtual_gid_maps = static:1995
+>>> Save & Exit
+
+3.
+vi /etc/dovecot/conf.d/99-stdsys.conf
+
+# 2.0.beta6 (3156315704ef): 
+# OS: Linux 2.6.32-71.el6.x86_64 x86_64 CentOS Linux release 6.0 (Final)
+auth_mechanisms = plain login
+disable_plaintext_auth = no
+first_valid_uid = 100
+listen = *
+mail_location = maildir:/var/vmail/%d/%n
+mbox_write_locks = fcntl
+passdb {
+  args = /etc/postfix/passwd
+  driver = passwd-file
+}
+protocols = pop3
+service auth {
+  unix_listener /var/spool/postfix/private/auth {
+    group = postfix
+    mode = 0660
+    user = postfix
+  }
+}
+ssl = no
+userdb {
+  args = uid=vmail gid=vmail home=/var/vmail
+  driver = static
+}
+>>> Save & Exit
+
+4.
+vi /etc/postfix/vdomains
+
+standardsystem.cn
+>>> Save & Exit
+
+5.
+vi /etc/postfix/vmailbox
+
+test@standardsystem.cn standardsystem.cn/test/
+>>> Save & Exit
+postmap /etc/postfix/vmailbox
+
+6.
+vi /etc/postfix/virtual
+>>> Add alias
+postmap /etc/postfix/virtual
+
+7.
+perl -MDigest::MD5 -e 'printf "{PLAIN-MD5}%s\n", Digest::MD5::md5_hex("pass")'
+>>{PLAIN-MD5}1a1dc91c907325c69271ddf0c944bc72
+
+vi /etc/postfix/passwd
+
+test@standardsystem.cn:{PLAIN-MD5}1a1dc91c907325c69271ddf0c944bc72
+>>> Save & Exit
+
+8.
+mkdir /var/vmail
+chown vmail:vmail /var/vmail
+
+9. Test
+perl -MMIME::Base64 -e 'print encode_base64("test\@standardsystem.cn\0test\@standardsystem.cn\0pass");'
+>>dGVzdEBzdGFuZGFyZHN5c3RlbS5jbgB0ZXN0QHN0YW5kYXJkc3lzdGVtLmNuAHBhc3M=
+
+telnet 127.0.0.1 25
+>>Trying 127.0.0.1...
+>>Connected to S100 (127.0.0.1).
+>>Escape character is '^]'.
+>>220 S100.localdomain ESMTP Postfix
+EHLO client.example.com
+>>250-S100.localdomain
+>>250-PIPELINING
+>>250-SIZE 10240000
+>>250-VRFY
+>>250-ETRN
+>>250-AUTH PLAIN LOGIN DIGEST-MD5 CRAM-MD5
+>>250-AUTH=PLAIN LOGIN DIGEST-MD5 CRAM-MD5
+>>250-ENHANCEDSTATUSCODES
+>>250-8BITMIME
+>>250 DSN
+AUTH PLAIN dGVzdEBzdGFuZGFyZHN5c3RlbS5jbgB0ZXN0QHN0YW5kYXJkc3lzdGVtLmNuAHBhc3M=
+>>235 2.0.0 Authentication successful
+mail from:<test@163.com>
+>>250 2.1.0 Ok
+rcpt to:<huang.shuai@sh.adways.net>
+>>250 2.1.5 Ok
+data
+>>354 End data with <CR><LF>.<CR><LF>
+good mail
+.
+>>250 2.0.0 Ok: queued as 194FAA72C89
+mail from:<test@163.com>
+>>250 2.1.0 Ok
+rcpt to:<test@standardsystem.cn>
+>>250 2.1.5 Ok
+data
+>>354 End data with <CR><LF>.<CR><LF>
+aabbcc
+.
+>>250 2.0.0 Ok: queued as 8E82CA72C89
+quit
+>>221 2.0.0 Bye
+>>Connection closed by foreign host.
+
+telnet 127.0.0.1 110
+>>Trying 127.0.0.1...
+>>Connected to localhost.localdomain (127.0.0.1).
+>>Escape character is '^]'.
+>>+OK Dovecot ready.
+user test@standardsystem.cn
+>>+OK
+pass pass
+>>+OK Logged in.
+list
+>>+OK 1 messages:
+>>1 501
+>>.
+quit
+>>+OK Logging out.

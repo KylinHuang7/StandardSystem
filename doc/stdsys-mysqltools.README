@@ -1,0 +1,88 @@
+#=======================================
+#===Author  : huang.shuai            ===
+#===Email   : huang.shuai@adways.net ===
+#===MSN     : huang.shuai@adways.net ===
+#=======================================
+
+#TODO
+#
+
+#===3.0.0(huang.shuai 2011-10-01): Update to 3.0.0
+#===2.1.6(huang.shuai 2009-12-31): Update to 2.1.6
+#===2.1.3(qu.xiaoyi 2007-12-14): create
+
+# innotop
+1.get source
+wget http://downloads.sourceforge.net/project/innotop/innotop/1.6.0/innotop-1.6.0.zip?use_mirror=ncu
+
+2.unzip
+unzip innotop-1.6.0.zip
+
+3.install innotop
+perl Makefile.PL
+make
+make install
+
+# mtop
+1.get source
+wget http://downloads.sourceforge.net/project/mtop/mtop/v0.6.6/mtop-0.6.6.tar.gz?use_mirror=ncu
+
+2.unzip
+tar zxvf mtop-0.6.6.tar.gz
+cd mtop-0.6.6
+
+3.install mtop
+perl Makefile.PL
+make
+make test
+make install
+
+# mysqlreport
+1.get source
+wget http://hackmysql.com/scripts/mysqlreport-3.5.tgz
+
+2.unzip
+tar zxf mysqlreport-3.5.tgz
+
+3.copy to the bin directory
+cd mysqlreport-3.5
+cp ./mysqlreport /usr/local/bin/
+
+# mysqlsniffer
+1.get source
+wget http://hackmysql.com/code/mysqlsniffer.tgz
+
+2.unzip
+mkdir mysqlsniffer
+cp mysqlsniffer.tgz mysqlsniffer/
+cd mysqlsniffer
+tar zxf mysqlsniffer.tgz
+
+3.comile
+gcc -O2 -lpcap -o mysqlsniffer mysqlsniffer.c packet_handlers.c misc.c
+
+4.copy to the bin directory
+cp ./mysqlsniffer /usr/local/bin/
+
+# tuning-primer
+1.get source
+wget http://www.day32.com/MySQL/tuning-primer.sh
+
+2.copy to the right directory
+cp ./tuning-primer.sh /usr/local/bin/
+
+3.executable
+chmod 755 /usr/local/bin/tuning-primer.sh
+
+# maatkit
+1.get source
+wget http://maatkit.googlecode.com/files/maatkit-7540.tar.gz
+
+2.unzip
+tar zxf maatkit-7540.tar.gz
+cd maatkit-7540
+
+3.install maatkit
+perl Makefile.PL
+make
+make install
