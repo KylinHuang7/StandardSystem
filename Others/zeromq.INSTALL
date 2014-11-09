@@ -1,0 +1,14 @@
+yum install gcc-c++ libtool autoconf automake libuuid-devel e2fsprogs-devel
+
+wget http://download.zeromq.org/zeromq-2.1.11.tar.gz
+tar zxf zeromq-2.1.11.tar.gz
+cd zeromq-2.1.11
+./configure
+make
+make install
+
+wget https://github.com/zeromq/pyzmq/downloads/pyzmq-2.1.11.tar.gz
+tar zxf pyzmq-2.1.11.tar.gz
+cd pyzmq-2.1.11
+python2.6 setup.py --zmq=/usr/local build
+python2.6 setup.py install

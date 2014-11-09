@@ -1,0 +1,16 @@
+mkdir /usr/local/redis
+wget http://redis.googlecode.com/files/redis-2.4.8.tar.gz
+tar zxf redis-2.4.8.tar.gz
+cd redis-2.4.8
+make
+make test
+make PREFIX=/usr/local/redis install
+
+vi /usr/local/src/redis-2.4.8/redis.conf
+# See redis.conf
+
+mv * /usr/local/redis/
+
+vi /etc/init.d/redis
+# See redis.init.d
+

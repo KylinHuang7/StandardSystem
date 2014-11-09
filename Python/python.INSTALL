@@ -1,0 +1,8 @@
+easy_install msgpack-python
+
+easy_install redis
+
+wget https://github.com/downloads/facebook/tornado/tornado-2.2.1.tar.gz
+tar zxf tornado-2.2.1.tar.gz
+cd tornado-2.2.1
+python2.6 setup.py build

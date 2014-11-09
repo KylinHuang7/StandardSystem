@@ -1,0 +1,14 @@
+cd /etc/yum.repos.d/
+wget http://s3tools.org/repo/RHEL_6/s3tools.repo
+yum install s3cmd
+s3cmd --configure
+# 输入access key和secret key
+
+
+s3cmd 1.0.0不支持server side encryption
+可以更改/usr/lib/python2.6/site-packages/S3/S3.py实现
+在object_put函数中增加头部
+headers["x-amz-server-side-encryption"] = "AES256"
+
+s3cmd 1.0.1用 --add-header=x-amz-server-side-encryption:AES256 即可
+

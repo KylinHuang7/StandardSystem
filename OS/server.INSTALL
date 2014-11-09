@@ -1,0 +1,14 @@
+# for open file limit
+
+ulimit -n 102400
+
+vi /etc/security/limits.conf
+
+* soft nofile 102400
+* hard nofile 102400
+
+
+# for server
+
+add 3 KEYs to conf/game.conf
+
